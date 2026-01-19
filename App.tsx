@@ -56,7 +56,6 @@ const App: React.FC = () => {
       setSchools(prev => prev.filter(s => s.id !== schoolId));
       setStudents(prev => prev.filter(s => s.schoolId !== schoolId));
       setStaff(prev => prev.filter(s => s.schoolId !== schoolId));
-      // Nettoyage des présences orphelines
       const schoolStudentIds = students.filter(s => s.schoolId === schoolId).map(s => s.id);
       setAttendance(prev => prev.filter(a => !schoolStudentIds.includes(a.studentId)));
     }
@@ -84,17 +83,30 @@ const App: React.FC = () => {
     setAttendance([...filtered, att]);
   };
 
+  const importDatabase = (syncKey: string) => {
+    try {
+      const decoded = atob(syncKey);
+      const data = JSON.parse(decoded);
+      if (data.schools) setSchools(data.schools);
+      if (data.students) setStudents(data.students);
+      if (data.staff) setStaff(data.staff);
+      if (data.parentAccounts) setParentAccounts(data.parentAccounts);
+      if (data.attendance) setAttendance(data.attendance);
+      alert("Base de données synchronisée avec succès !");
+      return true;
+    } catch (e) {
+      alert("Clé de synchronisation invalide.");
+      return false;
+    }
+  };
+
   const handleLogin = (newSession: UserSession) => {
     setSession(newSession);
   };
 
   const resetDatabase = () => {
-    if (window.confirm("Êtes-vous ABSOLUMENT sûr de vouloir réinitialiser TOUTE la base de données ?")) {
-      setSchools([]);
-      setStudents([]);
-      setStaff([]);
-      setParentAccounts([]);
-      setAttendance([]);
+    if (window.confirm("Réinitialiser toute la base de données ?")) {
+      setSchools([]); setStudents([]); setStaff([]); setParentAccounts([]); setAttendance([]);
       setSession({ role: UserRole.GUEST });
       localStorage.clear();
       window.location.reload();
@@ -110,7 +122,7 @@ const App: React.FC = () => {
         <main className="flex-grow container mx-auto px-4 py-8">
           <Routes>
             {isGuest ? (
-              <Route path="*" element={<Login staff={staff} parentAccounts={parentAccounts} schools={schools} onLogin={handleLogin} />} />
+              <Route path="*" element={<Login staff={staff} parentAccounts={parentAccounts} schools={schools} onLogin={handleLogin} onImportDB={importDatabase} />} />
             ) : (
               <>
                 <Route path="/" element={<Home schools={schools} session={session} onDeleteSchool={deleteSchool} />} />
@@ -167,10 +179,10 @@ const App: React.FC = () => {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 rounded-full border border-emerald-500/20">
                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Base de données: Sécurisée</span>
+                <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Database: Synchronisée</span>
               </div>
               <p className="text-slate-400 text-sm font-medium">
-                &copy; 2024 ScolarSync. Propulsé par Xelar Technology.
+                &copy; 2024 ScolarSync. Propulsé par Xelar Tech.
               </p>
             </div>
           </div>
